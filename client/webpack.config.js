@@ -1,11 +1,12 @@
 const path = require('path'),
 babiliPlugin = require('babili-webpack-plugin'),
 extractTextPlugin = require('extract-text-webpack-plugin'),
-optimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+optimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin'),
+StyleLintPlugin = require('stylelint-webpack-plugin');
 
 let plugins = [];
-console.log(process.env.NODE_ENV);
 
+console.log(process.env.NODE_ENV)
 if(process.env.NODE_ENV == 'production') {
     plugins.push(new babiliPlugin());
     plugins.push(new optimizeCSSAssetsPlugin({
@@ -18,6 +19,11 @@ if(process.env.NODE_ENV == 'production') {
         canPrint: true
     }));
 }
+
+plugins.push(new StyleLintPlugin({
+    configFile: '.stylelintrc',
+    files: './app-src/css/*.css',
+}));
 
 plugins.push(
     new extractTextPlugin('style.css')
