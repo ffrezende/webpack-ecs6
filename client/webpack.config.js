@@ -1,17 +1,50 @@
 const path = require('path'),
-babiliPlugin = require('babili-webpack-plugin'),
-extractTextPlugin = require('extract-text-webpack-plugin'),
-optimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin'),
-StyleLintPlugin = require('stylelint-webpack-plugin');
+    babiliPlugin = require('babili-webpack-plugin'),
+    extractTextPlugin = require('extract-text-webpack-plugin'),
+    optimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin'),
+    webpack = require('webpack'),
+    HtmlWebpackPlugin = require('html-webpack-plugin'),
+    StyleLintPlugin = require('stylelint-webpack-plugin');
 
 let plugins = [];
 
-console.log(process.env.NODE_ENV)
-if(process.env.NODE_ENV == 'production') {
+plugins.push(new HtmlWebpackPlugin({
+    hash: true,
+    minify: {
+        html5: true,
+        collapseWhitespace: true,
+        removeComments: true,
+    },
+    filename: 'index.html',
+    template: __dirname + '/main.html'
+}));
+
+plugins.push(
+    new extractTextPlugin('style.css')
+);
+
+plugins.push(new StyleLintPlugin({
+    configFile: '.stylelintrc',
+    files: './app-src/css/*.css',
+}));
+
+plugins.push(new webpack.ProvidePlugin({
+    '$': 'jquery/dist/jquery.js',
+    'Jquery': 'jquery/dist/jquery.js'
+}));
+
+
+let SERVICE_URL = JSON.stringify('http://localhost:3000');
+
+if (process.env.NODE_ENV == 'production') {
+    SERVICE_URL = JSON.stringify('hhtp://localhost:3000');
+    plugins.push(new webpack.optimize.ModuleConcatenationPlugin);
+
     plugins.push(new babiliPlugin());
+
     plugins.push(new optimizeCSSAssetsPlugin({
         cssProcessor: require('cssnano'),
-        cssProcessorOptions : {
+        cssProcessorOptions: {
             discardComments: {
                 removeAll: true
             }
@@ -20,20 +53,31 @@ if(process.env.NODE_ENV == 'production') {
     }));
 }
 
-plugins.push(new StyleLintPlugin({
-    configFile: '.stylelintrc',
-    files: './app-src/css/*.css',
+plugins.push(new webpack.DefinePlugin({
+    SERVICE_URL
 }));
 
-plugins.push(
-    new extractTextPlugin('style.css')
-);
 
 module.exports = {
-    entry: './app-src/app.js',
+    entry: {
+        app: './app-src/app.js',
+        vendor: ['jquery', 'bootstrap', 'reflect-metadata']
+    },
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                vendor: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: 'vendor',
+                    chunks: 'all'
+                }
+            }
+        }
+    },
     output: {
         filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
+        path: path.resolve(__dirname, 'dist'),
+        chunkFilename: 'vendor.js'
     },
     module: {
         rules: [
@@ -51,22 +95,22 @@ module.exports = {
                     use: 'css-loader'
                 })
             },
-            { 
-                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/, 
-                loader: 'url-loader?limit=10000&mimetype=application/font-woff' 
+            {
+                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
+                loader: 'url-loader?limit=10000&mimetype=application/font-woff'
             },
-            { 
-                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, 
+            {
+                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
                 loader: 'url-loader?limit=10000&mimetype=application/octet-stream'
             },
-            { 
-                test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, 
-                loader: 'file-loader' 
+            {
+                test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
+                loader: 'file-loader'
             },
-            { 
-                test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, 
-                loader: 'url-loader?limit=10000&mimetype=image/svg+xml' 
-            }          
+            {
+                test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
+                loader: 'url-loader?limit=10000&mimetype=image/svg+xml'
+            }
         ]
     },
     plugins
